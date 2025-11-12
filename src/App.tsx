@@ -7,8 +7,11 @@ import Dashboard from "./pages/Dashboard";
 import CreateLeaderboard from "./pages/CreateLeaderboard";
 import LeaderboardDetail from "./pages/LeaderboardDetail";
 import LeaderboardSettings from "./pages/LeaderboardSettings";
+import History from "./pages/History";
+import Stats from "./pages/Stats";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
-import { SoundToggle } from "./components/SoundToggle";
+import { BottomNavbar } from "./components/BottomNavbar";
 
 const queryClient = new QueryClient();
 
@@ -28,15 +31,18 @@ const App = () => (
           },
         }}
       />
-      <SoundToggle />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/create" element={<CreateLeaderboard />} />
+          <Route path="/history" element={<History />} />
+          <Route path="/stats" element={<Stats />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/leaderboard/:id" element={<LeaderboardDetail />} />
           <Route path="/leaderboard/:id/settings" element={<LeaderboardSettings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <BottomNavbar />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

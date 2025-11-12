@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Plus, Settings, UserPlus, Trophy, Crown } from 'lucide-react';
+import { Plus, UserPlus, Crown } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { RetroButton } from '@/components/RetroButton';
 import { RetroCard } from '@/components/RetroCard';
 import { storage } from '@/lib/storage';
 import { Leaderboard, Player } from '@/lib/types';
-import { soundPlayer } from '@/lib/sounds';
 import { toast } from 'sonner';
 import { AddPlayerDialog } from '@/components/AddPlayerDialog';
 import { ScoreUpdateDialog } from '@/components/ScoreUpdateDialog';
@@ -47,24 +46,16 @@ const LeaderboardDetail = () => {
   const handleScoreUpdate = (playerId: string, newScore: number) => {
     if (!leaderboard) return;
     
+    // Ensure score is a valid number
+    const validScore = Math.max(0, Math.round(newScore));
+    
     const updatedPlayers = leaderboard.players.map(p =>
-      p.id === playerId ? { ...p, score: newScore } : p
+      p.id === playerId ? { ...p, score: validScore } : p
     );
     
     storage.updateLeaderboard(leaderboard.id, { players: updatedPlayers });
-    soundPlayer.playCoin();
     loadLeaderboard();
     setSelectedPlayer(null);
-  };
-
-  const handleWinIncrement = (playerId: string, increment: number) => {
-    if (!leaderboard) return;
-    
-    const player = leaderboard.players.find(p => p.id === playerId);
-    if (!player) return;
-    
-    const newScore = Math.max(0, player.score + increment);
-    handleScoreUpdate(playerId, newScore);
   };
 
   if (!leaderboard) return null;
@@ -73,20 +64,11 @@ const LeaderboardDetail = () => {
   const topPlayer = sortedPlayers[0];
 
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8 relative scanlines">
+    <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8 pb-navbar relative scanlines">
       <div className="max-w-4xl mx-auto">
         <PageHeader
           title={leaderboard.name}
           showBack
-          action={
-            <RetroButton
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`/leaderboard/${id}/settings`)}
-            >
-              <Settings size={16} />
-            </RetroButton>
-          }
         />
 
         {leaderboard.description && (
@@ -141,7 +123,8 @@ const LeaderboardDetail = () => {
                 return (
                   <RetroCard
                     key={player.id}
-                    className={`flex items-center justify-between gap-4 hover:scale-[1.02] transition-transform ${
+                    onClick={() => setSelectedPlayer(player)}
+                    className={`flex items-center justify-between gap-4 hover:scale-[1.02] transition-all cursor-pointer active:scale-[0.98] ${
                       isTopPlayer ? 'border-accent glow-yellow' : ''
                     }`}
                   >
@@ -155,49 +138,28 @@ const LeaderboardDetail = () => {
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-foreground text-xs sm:text-sm uppercase truncate">
-                            {player.name}
-                          </span>
+                        <div className="flex flex-col gap-1">
                           {isTopPlayer && (
-                            <span className="text-accent text-[10px] blink shrink-0">
-                              <Crown size={14} className="inline" /> HIGH SCORE
-                            </span>
+                            <div className="flex items-center gap-1">
+                              <Crown size={12} className="text-accent shrink-0" />
+                              <span className="text-accent text-[9px] blink uppercase tracking-wide">
+                                HIGH SCORE
+                              </span>
+                            </div>
                           )}
+                          <div className="flex items-center gap-2">
+                            <span className="text-foreground text-xs sm:text-sm uppercase truncate">
+                              {player.name}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
-                      {leaderboard.scoreMode === 'win_count' ? (
-                        <>
-                          <RetroButton
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleWinIncrement(player.id, -1)}
-                            disabled={player.score === 0}
-                          >
-                            -1
-                          </RetroButton>
-                          <span className="text-accent text-base sm:text-lg font-bold min-w-[40px] text-center">
-                            {player.score}
-                          </span>
-                          <RetroButton
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleWinIncrement(player.id, 1)}
-                          >
-                            +1
-                          </RetroButton>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => setSelectedPlayer(player)}
-                          className="text-accent text-base sm:text-lg font-bold hover:scale-110 transition-transform min-w-[60px] text-right"
-                        >
-                          {player.score}
-                        </button>
-                      )}
+                      <div className="text-accent text-base sm:text-lg font-bold min-w-[60px] text-right">
+                        {player.score}
+                      </div>
                     </div>
                   </RetroCard>
                 );

@@ -2,22 +2,45 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Universal Leaderboard - Retro Game Scoreboard</title>
     <meta name="description" content="Satu Papan Skor untuk Semua Permainan - Simple retro-style leaderboard for all your family games" />
     <meta name="author" content="Universal Leaderboard" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#0d1621" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Retro Scoreboard" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/pwa-192x192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/pwa-512x512.png" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" type="image/png" href="/pwa-64x64.png" sizes="64x64" />
+    <link rel="icon" type="image/png" href="/pwa-192x192.png" sizes="192x192" />
+    <link rel="icon" type="image/png" href="/pwa-512x512.png" sizes="512x512" />
+    <link rel="shortcut icon" href="/favicon.ico" type="image/png" />
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 
+    <!-- Open Graph / Social Media -->
     <meta property="og:title" content="Universal Leaderboard - Retro Game Scoreboard" />
     <meta property="og:description" content="Satu Papan Skor untuk Semua Permainan" />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:image" content="/pwa-512x512.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@UniversalLeaderboard" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:image" content="/pwa-512x512.png" />
   </head>
 
   <body>

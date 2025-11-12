@@ -3,10 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { RetroButton } from '@/components/RetroButton';
 import { RetroCard } from '@/components/RetroCard';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { storage } from '@/lib/storage';
 import { Leaderboard, ScoreMode, SortOrder } from '@/lib/types';
 import { soundPlayer } from '@/lib/sounds';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 const CreateLeaderboard = () => {
   const navigate = useNavigate();
@@ -44,7 +47,7 @@ const CreateLeaderboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8 relative scanlines">
+    <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8 pb-navbar relative scanlines">
       <div className="max-w-2xl mx-auto">
         <PageHeader title="BUAT LEADERBOARD BARU" showBack />
 
@@ -78,17 +81,26 @@ const CreateLeaderboard = () => {
             </div>
 
             <div>
-              <label className="block text-primary text-xs sm:text-sm mb-3 uppercase">
+              <Label className="block text-primary text-xs sm:text-sm mb-3 uppercase">
                 * MODE SKOR
-              </label>
-              <div className="space-y-2">
-                <label className="flex items-start gap-3 cursor-pointer p-3 border-2 border-border hover:border-primary transition-colors">
-                  <input
-                    type="radio"
-                    name="scoreMode"
+              </Label>
+              <RadioGroup
+                value={formData.scoreMode}
+                onValueChange={(value) => setFormData({ ...formData, scoreMode: value as ScoreMode })}
+                className="space-y-3"
+              >
+                <label
+                  htmlFor="scoreMode-win_count"
+                  className={cn(
+                    "flex items-start gap-3 cursor-pointer p-3 border-2 transition-all",
+                    formData.scoreMode === 'win_count'
+                      ? "border-primary bg-primary/10 glow-cyan"
+                      : "border-border hover:border-primary"
+                  )}
+                >
+                  <RadioGroupItem
                     value="win_count"
-                    checked={formData.scoreMode === 'win_count'}
-                    onChange={(e) => setFormData({ ...formData, scoreMode: e.target.value as ScoreMode })}
+                    id="scoreMode-win_count"
                     className="mt-1"
                   />
                   <div className="flex-1">
@@ -99,13 +111,18 @@ const CreateLeaderboard = () => {
                   </div>
                 </label>
 
-                <label className="flex items-start gap-3 cursor-pointer p-3 border-2 border-border hover:border-primary transition-colors">
-                  <input
-                    type="radio"
-                    name="scoreMode"
+                <label
+                  htmlFor="scoreMode-total_points"
+                  className={cn(
+                    "flex items-start gap-3 cursor-pointer p-3 border-2 transition-all",
+                    formData.scoreMode === 'total_points'
+                      ? "border-primary bg-primary/10 glow-cyan"
+                      : "border-border hover:border-primary"
+                  )}
+                >
+                  <RadioGroupItem
                     value="total_points"
-                    checked={formData.scoreMode === 'total_points'}
-                    onChange={(e) => setFormData({ ...formData, scoreMode: e.target.value as ScoreMode })}
+                    id="scoreMode-total_points"
                     className="mt-1"
                   />
                   <div className="flex-1">
@@ -115,21 +132,30 @@ const CreateLeaderboard = () => {
                     </div>
                   </div>
                 </label>
-              </div>
+              </RadioGroup>
             </div>
 
             <div>
-              <label className="block text-primary text-xs sm:text-sm mb-3 uppercase">
+              <Label className="block text-primary text-xs sm:text-sm mb-3 uppercase">
                 * ATURAN PENGURUTAN
-              </label>
-              <div className="space-y-2">
-                <label className="flex items-start gap-3 cursor-pointer p-3 border-2 border-border hover:border-primary transition-colors">
-                  <input
-                    type="radio"
-                    name="sortOrder"
+              </Label>
+              <RadioGroup
+                value={formData.sortOrder}
+                onValueChange={(value) => setFormData({ ...formData, sortOrder: value as SortOrder })}
+                className="space-y-3"
+              >
+                <label
+                  htmlFor="sortOrder-highest"
+                  className={cn(
+                    "flex items-start gap-3 cursor-pointer p-3 border-2 transition-all",
+                    formData.sortOrder === 'highest'
+                      ? "border-primary bg-primary/10 glow-cyan"
+                      : "border-border hover:border-primary"
+                  )}
+                >
+                  <RadioGroupItem
                     value="highest"
-                    checked={formData.sortOrder === 'highest'}
-                    onChange={(e) => setFormData({ ...formData, sortOrder: e.target.value as SortOrder })}
+                    id="sortOrder-highest"
                     className="mt-1"
                   />
                   <div className="flex-1">
@@ -140,13 +166,18 @@ const CreateLeaderboard = () => {
                   </div>
                 </label>
 
-                <label className="flex items-start gap-3 cursor-pointer p-3 border-2 border-border hover:border-primary transition-colors">
-                  <input
-                    type="radio"
-                    name="sortOrder"
+                <label
+                  htmlFor="sortOrder-lowest"
+                  className={cn(
+                    "flex items-start gap-3 cursor-pointer p-3 border-2 transition-all",
+                    formData.sortOrder === 'lowest'
+                      ? "border-primary bg-primary/10 glow-cyan"
+                      : "border-border hover:border-primary"
+                  )}
+                >
+                  <RadioGroupItem
                     value="lowest"
-                    checked={formData.sortOrder === 'lowest'}
-                    onChange={(e) => setFormData({ ...formData, sortOrder: e.target.value as SortOrder })}
+                    id="sortOrder-lowest"
                     className="mt-1"
                   />
                   <div className="flex-1">
@@ -156,7 +187,7 @@ const CreateLeaderboard = () => {
                     </div>
                   </div>
                 </label>
-              </div>
+              </RadioGroup>
             </div>
 
             <div className="flex gap-3 pt-4">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Plus, Minus } from 'lucide-react';
 import { RetroButton } from './RetroButton';
 import { RetroCard } from './RetroCard';
@@ -13,15 +13,26 @@ interface ScoreUpdateDialogProps {
 }
 
 export const ScoreUpdateDialog = ({ open, onClose, player, onUpdate }: ScoreUpdateDialogProps) => {
-  const [inputValue, setInputValue] = useState(player.score.toString());
-  const [mode, setMode] = useState<'set' | 'add' | 'subtract'>('set');
+  const [inputValue, setInputValue] = useState('1');
+  const [mode, setMode] = useState<'set' | 'add' | 'subtract'>('add');
+
+  // Reset input when dialog opens or player changes
+  useEffect(() => {
+    if (open) {
+      setInputValue('1');
+      setMode('add');
+    }
+  }, [open, player.id]);
 
   if (!open) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const value = parseInt(inputValue) || 0;
+    // Parse input value - handle empty string and invalid values
+    const numValue = inputValue === '' ? 0 : parseInt(inputValue, 10);
+    const value = isNaN(numValue) ? 0 : Math.max(0, numValue);
+    
     let newScore = player.score;
 
     switch (mode) {
@@ -36,12 +47,13 @@ export const ScoreUpdateDialog = ({ open, onClose, player, onUpdate }: ScoreUpda
         break;
     }
 
+    // Always update (validation happens in the component that calls onUpdate)
     onUpdate(player.id, newScore);
   };
 
   const handleClose = () => {
-    setInputValue(player.score.toString());
-    setMode('set');
+    setInputValue('1');
+    setMode('add');
     onClose();
   };
 
@@ -80,6 +92,7 @@ export const ScoreUpdateDialog = ({ open, onClose, player, onUpdate }: ScoreUpda
                 size="sm"
                 onClick={() => {
                   setMode('set');
+                  setInputValue(player.score.toString());
                   soundPlayer.playSelect();
                 }}
               >
@@ -91,7 +104,10 @@ export const ScoreUpdateDialog = ({ open, onClose, player, onUpdate }: ScoreUpda
                 size="sm"
                 onClick={() => {
                   setMode('add');
-                  setInputValue('0');
+                  // Only reset to 1 if mode is changing to add, otherwise keep current value
+                  if (mode !== 'add') {
+                    setInputValue('1');
+                  }
                   soundPlayer.playSelect();
                 }}
                 className="flex items-center justify-center gap-1"
@@ -104,7 +120,10 @@ export const ScoreUpdateDialog = ({ open, onClose, player, onUpdate }: ScoreUpda
                 size="sm"
                 onClick={() => {
                   setMode('subtract');
-                  setInputValue('0');
+                  // Only reset to 1 if mode is changing to subtract, otherwise keep current value
+                  if (mode !== 'subtract') {
+                    setInputValue('1');
+                  }
                   soundPlayer.playSelect();
                 }}
                 className="flex items-center justify-center gap-1"
@@ -121,17 +140,34 @@ export const ScoreUpdateDialog = ({ open, onClose, player, onUpdate }: ScoreUpda
             <input
               type="number"
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              className="w-full bg-muted text-foreground border-2 border-border px-3 py-2 text-sm focus:border-primary focus:outline-none text-center text-xl"
+              onChange={(e) => {
+                const newValue = e.target.value;
+                setInputValue(newValue);
+              }}
+              onBlur={(e) => {
+                // Ensure valid number on blur, but allow user to type
+                const numValue = parseInt(e.target.value);
+                if (isNaN(numValue) || numValue < 0) {
+                  setInputValue('0');
+                } else {
+                  setInputValue(numValue.toString());
+                }
+              }}
+              className="w-full bg-muted text-foreground border-2 border-border px-3 py-2 text-sm focus:border-primary focus:outline-none text-center text-xl font-bold"
               autoFocus
               min="0"
+              step="1"
+              placeholder="0"
             />
             {mode !== 'set' && (
               <p className="text-muted-foreground text-[10px] mt-2">
-                HASIL: {mode === 'add' 
-                  ? player.score + (parseInt(inputValue) || 0)
-                  : Math.max(0, player.score - (parseInt(inputValue) || 0))
-                }
+                HASIL: {(() => {
+                  const numValue = inputValue === '' ? 0 : parseInt(inputValue, 10);
+                  const value = isNaN(numValue) ? 0 : Math.max(0, numValue);
+                  return mode === 'add' 
+                    ? player.score + value
+                    : Math.max(0, player.score - value);
+                })()}
               </p>
             )}
           </div>

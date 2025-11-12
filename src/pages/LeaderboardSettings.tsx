@@ -47,7 +47,7 @@ const LeaderboardSettings = () => {
   if (!leaderboard) return null;
 
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8 relative scanlines">
+    <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8 pb-navbar relative scanlines">
       <div className="max-w-2xl mx-auto">
         <PageHeader title="PENGATURAN" showBack />
 

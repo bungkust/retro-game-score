@@ -1,73 +1,178 @@
-# Welcome to your Lovable project
+# Universal Leaderboard - Retro Game Scoreboard
 
-## Project info
+Satu Papan Skor untuk Semua Permainan - Simple retro-style leaderboard for all your family games.
 
-**URL**: https://lovable.dev/projects/d3cbfbc0-0762-4164-81b4-e4c5dd93fbb0
+## Features
 
-## How can I edit this code?
+- 🎮 **Multi Game Support**: Create leaderboards for various games
+- 🏆 **Win Count & Total Points**: Track wins or total points
+- 📱 **PWA Support**: Install as app, works offline
+- 📊 **Statistics**: View comprehensive statistics and rankings
+- 📜 **History**: Track activity and score changes
+- ⚡ **Fast & Easy**: Update scores quickly and easily
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/d3cbfbc0-0762-4164-81b4-e4c5dd93fbb0) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
+## Technologies
 
 This project is built with:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- **Vite** - Build tool and dev server
+- **TypeScript** - Type safety
+- **React** - UI framework
+- **React Router** - Routing
+- **shadcn-ui** - UI components
+- **Tailwind CSS** - Styling
+- **PWA** - Progressive Web App support
 
-## How can I deploy this project?
+## Getting Started
 
-Simply open [Lovable](https://lovable.dev/projects/d3cbfbc0-0762-4164-81b4-e4c5dd93fbb0) and click on Share -> Publish.
+### Prerequisites
 
-## Can I connect a custom domain to my Lovable project?
+- Node.js 20 or higher
+- npm or yarn
 
-Yes, you can!
+### Installation
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+1. **Clone the repository**
+   ```bash
+   git clone <YOUR_GIT_URL>
+   cd retro-game-score
+   ```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Generate PWA icons** (optional, if icons are missing)
+   ```bash
+   npm run generate-icons
+   ```
+
+4. **Start development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open in browser**
+   - Open `http://localhost:8080` in your browser
+
+### Build for Production
+
+```bash
+npm run build
+```
+
+The build output will be in the `dist/` folder.
+
+### Preview Production Build
+
+```bash
+npm run preview
+```
+
+## Project Structure
+
+```
+retro-game-score/
+├── public/          # Public assets (icons, robots.txt)
+├── src/
+│   ├── components/  # React components
+│   ├── pages/       # Page components
+│   ├── lib/         # Utilities and types
+│   └── main.tsx     # Entry point
+├── scripts/         # Build scripts
+├── index.html       # HTML template
+├── vite.config.ts   # Vite configuration
+└── package.json     # Dependencies
+```
+
+## Deployment
+
+### Deploy to Netlify (Recommended)
+
+1. **Push code to Git repository**
+   ```bash
+   git add .
+   git commit -m "Prepare for production"
+   git push origin main
+   ```
+
+2. **Deploy via Netlify UI**
+   - Go to [app.netlify.com](https://app.netlify.com)
+   - Click "Add new site" > "Import an existing project"
+   - Select your Git repository
+   - Netlify will auto-detect settings from `netlify.toml`
+   - Click "Deploy site"
+
+3. **Deploy via Netlify CLI**
+   ```bash
+   npm install -g netlify-cli
+   netlify login
+   netlify init
+   netlify deploy --prod
+   ```
+
+For detailed deployment instructions, see [NETLIFY.md](./NETLIFY.md).
+
+## Custom Domain
+
+### Netlify
+
+1. Go to Netlify Dashboard > Site settings > Domain settings
+2. Click "Add custom domain"
+3. Configure DNS records (CNAME or A record)
+4. SSL certificate will be automatically generated
+
+## PWA Features
+
+This application is configured as a Progressive Web App (PWA):
+
+- **Service Worker**: For offline support
+- **Web App Manifest**: For installing as an app
+- **Icons**: Generated PWA icons (64x64, 192x192, 512x512, maskable)
+
+### Install as App
+
+After deployment, users can:
+1. Open the application in a mobile browser
+2. Click browser menu > "Add to Home Screen" or "Install App"
+3. The app will be installed and can be opened like a native app
+
+## Development
+
+### Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+- `npm run generate-icons` - Generate PWA icons
+
+### Code Structure
+
+- **Components**: Reusable UI components in `src/components/`
+- **Pages**: Page components in `src/pages/`
+- **Lib**: Utilities, types, and storage in `src/lib/`
+- **Styles**: Global styles in `src/index.css`
+
+## Data Storage
+
+This application uses browser's `localStorage` for data storage:
+- All leaderboards and players are stored locally
+- Data persists across browser sessions
+- Data can be exported/imported as JSON
+
+## License
+
+This project is open source and available under the MIT License.
+
+## Support
+
+If you encounter any issues:
+- Check [NETLIFY.md](./NETLIFY.md) for deployment guide
+- Check [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) for deployment checklist
+- Check project documentation
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.

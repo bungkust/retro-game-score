@@ -160,3 +160,20 @@ All colors MUST be HSL.
     pointer-events: none;
   }
 }
+
+/* Bottom Navbar Utilities */
+@layer utilities {
+  .pb-navbar {
+    padding-bottom: 5rem; /* 80px for navbar height + safe area */
+  }
+  
+  .min-h-screen-navbar {
+    min-height: calc(100vh - 5rem);
+  }
+
+  /* Safe area for devices with notches */
+  .h-safe-area-inset-bottom {
+    height: env(safe-area-inset-bottom, 0);
+    min-height: env(safe-area-inset-bottom, 0);
+  }
+}
