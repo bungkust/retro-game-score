@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, History, BarChart3, Settings } from 'lucide-react';
+import { Home, History, BarChart3, Settings, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const BottomNavbar = () => {
@@ -12,6 +12,12 @@ export const BottomNavbar = () => {
       icon: Home,
       path: '/',
       active: location.pathname === '/',
+    },
+    {
+      label: 'PLAY',
+      icon: Play,
+      path: '/play',
+      active: location.pathname.startsWith('/play'),
     },
     {
       label: 'HISTORY',
