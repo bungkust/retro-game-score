@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Plus, UserPlus, Crown } from 'lucide-react';
+import { Plus, UserPlus, Crown, Share2 } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { RetroButton } from '@/components/RetroButton';
 import { RetroCard } from '@/components/RetroCard';
@@ -9,6 +9,7 @@ import { Leaderboard, Player } from '@/lib/types';
 import { toast } from 'sonner';
 import { AddPlayerDialog } from '@/components/AddPlayerDialog';
 import { ScoreUpdateDialog } from '@/components/ScoreUpdateDialog';
+import { ShareLeaderboardDialog } from '@/components/ShareLeaderboardDialog';
 
 const LeaderboardDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +17,9 @@ const LeaderboardDetail = () => {
   const [leaderboard, setLeaderboard] = useState<Leaderboard | null>(null);
   const [showAddPlayer, setShowAddPlayer] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const leaderboardRef = useRef<HTMLDivElement>(null);
+  const leaderboardContentRef = useRef<HTMLDivElement>(null); // Ref untuk konten tanpa header
 
   useEffect(() => {
     loadLeaderboard();
@@ -65,26 +69,43 @@ const LeaderboardDetail = () => {
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8 pb-navbar relative scanlines">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto" ref={leaderboardRef}>
         <PageHeader
           title={leaderboard.name}
           showBack
+          action={
+            <RetroButton
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowShareDialog(true)}
+              className="flex items-center gap-1"
+            >
+              <Share2 size={14} />
+            </RetroButton>
+          }
         />
 
-        {leaderboard.description && (
-          <RetroCard className="mb-6 text-xs text-muted-foreground">
-            {leaderboard.description}
-          </RetroCard>
-        )}
+        {/* Content wrapper untuk capture (tanpa header) */}
+        <div ref={leaderboardContentRef} className="leaderboard-content">
+          {/* Title untuk capture (tanpa button) */}
+          <h1 className="text-lg sm:text-xl md:text-2xl text-primary glow-cyan uppercase tracking-wider mb-6">
+            {leaderboard.name}
+          </h1>
 
-        <div className="flex flex-wrap gap-2 mb-6 text-[10px]">
-          <span className="px-3 py-1 bg-muted text-foreground border border-border">
-            {leaderboard.scoreMode === 'win_count' ? 'WIN COUNT' : 'TOTAL POINTS'}
-          </span>
-          <span className="px-3 py-1 bg-muted text-foreground border border-border">
-            {leaderboard.sortOrder === 'highest' ? '↑ TERTINGGI' : '↓ TERENDAH'}
-          </span>
-        </div>
+          {leaderboard.description && (
+            <RetroCard className="mb-6 text-xs text-muted-foreground">
+              {leaderboard.description}
+            </RetroCard>
+          )}
+
+          <div className="flex flex-wrap gap-2 mb-6 text-[10px]">
+            <span className="px-3 py-1 bg-muted text-foreground border border-border">
+              {leaderboard.scoreMode === 'win_count' ? 'WIN COUNT' : 'TOTAL POINTS'}
+            </span>
+            <span className="px-3 py-1 bg-muted text-foreground border border-border">
+              {leaderboard.sortOrder === 'highest' ? '↑ TERTINGGI' : '↓ TERENDAH'}
+            </span>
+          </div>
 
         {sortedPlayers.length === 0 ? (
           <RetroCard className="text-center py-12">
@@ -167,7 +188,10 @@ const LeaderboardDetail = () => {
             </div>
           </>
         )}
+        </div>
+        {/* End of content wrapper for capture */}
       </div>
+      {/* End of max-w-4xl wrapper */}
 
       <AddPlayerDialog
         open={showAddPlayer}
@@ -185,6 +209,15 @@ const LeaderboardDetail = () => {
           onClose={() => setSelectedPlayer(null)}
           player={selectedPlayer}
           onUpdate={handleScoreUpdate}
+        />
+      )}
+
+      {leaderboard && (
+        <ShareLeaderboardDialog
+          open={showShareDialog}
+          onClose={() => setShowShareDialog(false)}
+          leaderboard={leaderboard}
+          leaderboardElementRef={leaderboardContentRef}
         />
       )}
     </div>
