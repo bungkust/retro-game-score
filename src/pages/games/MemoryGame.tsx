@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, RotateCcw, Brain } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
@@ -9,14 +9,14 @@ import { storage } from '@/lib/storage';
 import { soundPlayer } from '@/lib/sounds';
 import { toast } from 'sonner';
 
-const CARD_SYMBOLS = ['🎮', '🎯', '🎲', '🎪', '🎨', '🎭', '🎸', '🎺'];
-// Level 1-5: Higher level = more pairs, higher score multiplier
+const CARD_SYMBOLS = ['🎮', '🎯', '🎲', '🎪', '🎨', '🎭', '🎸', '🎺', '🏆', '⚽', '🏀', '🎾', '🏐', '🎱', '🎳', '🎯', '🎪', '🎨', '🎭', '🎸', '🎺', '🎷', '🎹', '🥁', '🎤', '🎧', '🎬', '🎨', '🎭', '🎪', '🎯', '🎲', '🎮', '🎰', '🎲', '🃏', '🀄', '🎴', '🎲', '🎯', '🎪', '🎨', '🎭', '🎸', '🎺', '🎷', '🎹', '🥁', '🎤', '🎧', '🎬'];
+// Level 1-5: Each level has different grid size, increasing difficulty
 const LEVELS = [
-  { level: 1, size: 4, pairs: 8, multiplier: 1 },
-  { level: 2, size: 4, pairs: 8, multiplier: 2 },
-  { level: 3, size: 6, pairs: 12, multiplier: 3 },
-  { level: 4, size: 6, pairs: 12, multiplier: 5 },
-  { level: 5, size: 8, pairs: 16, multiplier: 10 },
+  { level: 1, rows: 3, cols: 4, pairs: 6, multiplier: 1 },    // 3x4 = 12 cards (6 pairs)
+  { level: 2, rows: 4, cols: 4, pairs: 8, multiplier: 2 },    // 4x4 = 16 cards (8 pairs)
+  { level: 3, rows: 4, cols: 6, pairs: 12, multiplier: 3 },   // 4x6 = 24 cards (12 pairs)
+  { level: 4, rows: 5, cols: 6, pairs: 15, multiplier: 5 },   // 5x6 = 30 cards (15 pairs)
+  { level: 5, rows: 6, cols: 6, pairs: 18, multiplier: 10 },  // 6x6 = 36 cards (18 pairs)
 ];
 
 type Card = {
@@ -38,6 +38,9 @@ const MemoryGame = () => {
   const [showNameInput, setShowNameInput] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
   const [finalMoves, setFinalMoves] = useState(0);
+  const [timeElapsed, setTimeElapsed] = useState(0); // Time in seconds
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const timerRef = useRef<number | null>(null);
 
   const currentLevelConfig = LEVELS[level - 1];
   const scoreMultiplier = currentLevelConfig.multiplier;
@@ -47,9 +50,33 @@ const MemoryGame = () => {
   const sortedPlayers = useMemo(() => [...leaderboard.players].sort((a, b) => b.score - a.score), [leaderboard.players]);
   const currentHighScore = sortedPlayers[0]?.score || 0;
 
+  // Timer effect - runs continuously while game is active
+  useEffect(() => {
+    if (startTime !== null && !gameWon) {
+      timerRef.current = window.setInterval(() => {
+        if (startTime !== null) {
+          setTimeElapsed(Math.floor((Date.now() - startTime) / 1000));
+        }
+      }, 1000);
+    } else {
+      // Stop timer when game is won
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [startTime, gameWon]);
+
   // Initialize game
   const initializeGame = useCallback(() => {
     const config = currentLevelConfig;
+    // Get symbols for this level (based on pairs needed)
     const symbols = CARD_SYMBOLS.slice(0, config.pairs);
     const cardPairs = [...symbols, ...symbols];
     
@@ -72,6 +99,8 @@ const MemoryGame = () => {
     setShowNameInput(false);
     setFinalScore(0);
     setFinalMoves(0);
+    setTimeElapsed(0);
+    setStartTime(null); // Don't start timer yet - wait for first card click
   }, [currentLevelConfig]);
 
   useEffect(() => {
@@ -86,6 +115,11 @@ const MemoryGame = () => {
     if (card.isFlipped || card.isMatched) return;
     if (flippedCards.length >= 2) return;
 
+    // Start timer on first card click (if not already started)
+    if (startTime === null) {
+      setStartTime(Date.now());
+    }
+
     soundPlayer.playSelect();
 
     const newFlippedCards = [...flippedCards, cardId];
@@ -99,6 +133,10 @@ const MemoryGame = () => {
     // Check for match when 2 cards are flipped
     if (newFlippedCards.length === 2) {
       setIsProcessing(true);
+      
+      // Capture current moves value before setTimeout
+      const currentMoves = moves;
+      
       setMoves((prev) => prev + 1);
 
       setTimeout(() => {
@@ -113,23 +151,55 @@ const MemoryGame = () => {
             idx === firstId || idx === secondId
               ? { ...c, isMatched: true, isFlipped: false }
               : c
-          );
+              );
           setCards(updatedCards);
           setMatches((prev) => {
             const newMatches = prev + 1;
             const config = currentLevelConfig;
+            
+            // Check if game is won
             if (newMatches === config.pairs) {
-              // Calculate score: base score = (maxPossibleMoves - actualMoves) * multiplier
-              // maxPossibleMoves = pairs * 2 (worst case: flip all cards twice)
-              const maxPossibleMoves = config.pairs * 2;
-              const actualMoves = moves + 1;
-              const baseScore = Math.max(0, maxPossibleMoves - actualMoves);
-              const calculatedScore = baseScore * scoreMultiplier * 10; // Multiply by 10 for better score scale
+              // Game won! Calculate final time and score
+              const endTime = Date.now();
+              const finalTime = startTime ? Math.floor((endTime - startTime) / 1000) : timeElapsed;
               
+              // Stop timer immediately
+              if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+              }
+              
+              // Calculate score based on moves and time
+              // Use currentMoves + 1 because we already incremented moves
+              const actualMoves = currentMoves + 1;
+              const actualTime = Math.max(1, finalTime); // At least 1 second
+              
+              // Base score from moves: perfect game = pairs moves
+              // Score decreases as moves increase
+              // Formula: (pairs / actualMoves) * 1000 = base score
+              const optimalMoves = config.pairs;
+              const movesEfficiency = Math.min(1, optimalMoves / actualMoves);
+              const baseMovesScore = Math.floor(movesEfficiency * 1000);
+              
+              // Time multiplier: faster = higher multiplier
+              // Optimal time: pairs * 1.5 seconds (very fast)
+              // Time multiplier: (optimalTime / actualTime), capped at 2.0x
+              const optimalTime = Math.max(config.pairs * 1.5, 10);
+              const timeMultiplier = Math.min(2.0, optimalTime / actualTime);
+              
+              // Final score: base moves score * time multiplier * level multiplier
+              const baseScore = baseMovesScore;
+              const timeBonus = baseScore * (timeMultiplier - 1); // Extra score from time
+              const calculatedScore = Math.floor((baseScore + timeBonus) * scoreMultiplier);
+              
+              // Update states immediately (like Snake game)
+              setTimeElapsed(finalTime);
               setFinalScore(calculatedScore);
               setFinalMoves(actualMoves);
               setGameWon(true);
+              // Show name input dialog immediately (like Snake game)
               setShowNameInput(true);
+              
               soundPlayer.playSuccess();
             }
             return newMatches;
@@ -168,7 +238,19 @@ const MemoryGame = () => {
   };
 
   const config = currentLevelConfig;
-  const gridCols = config.size === 4 ? 'grid-cols-4' : config.size === 6 ? 'grid-cols-6' : 'grid-cols-8';
+  // Dynamic grid columns based on level config
+  const getGridColsClass = (cols: number) => {
+    const colsMap: { [key: number]: string } = {
+      3: 'grid-cols-3',
+      4: 'grid-cols-4',
+      5: 'grid-cols-5',
+      6: 'grid-cols-6',
+      7: 'grid-cols-7',
+      8: 'grid-cols-8',
+    };
+    return colsMap[cols] || 'grid-cols-4';
+  };
+  const gridCols = getGridColsClass(config.cols);
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 md:p-8 pb-navbar relative scanlines">
@@ -214,23 +296,23 @@ const MemoryGame = () => {
             </div>
             <div className="mt-2 text-center">
               <p className="text-muted-foreground text-[9px]">
-                PAIRS: {config.pairs} • MULTIPLIER: {scoreMultiplier}x
+                GRID: {config.rows}x{config.cols} • PAIRS: {config.pairs} • MULTIPLIER: {scoreMultiplier}x
               </p>
             </div>
           </RetroCard>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-4 gap-3 mb-6">
           <RetroCard className="text-center p-3">
             <div className="text-accent text-lg font-bold">{moves}</div>
             <div className="text-muted-foreground text-[9px] mt-1">MOVES</div>
           </RetroCard>
           <RetroCard className="text-center p-3">
             <div className="text-primary text-lg font-bold">
-              {currentHighScore || '-'}
+              {Math.floor(timeElapsed / 60)}:{(timeElapsed % 60).toString().padStart(2, '0')}
             </div>
-            <div className="text-muted-foreground text-[9px] mt-1">HIGH</div>
+            <div className="text-muted-foreground text-[9px] mt-1">TIME</div>
           </RetroCard>
           <RetroCard className="text-center p-3">
             <div className="text-secondary text-lg font-bold">
@@ -238,11 +320,22 @@ const MemoryGame = () => {
             </div>
             <div className="text-muted-foreground text-[9px] mt-1">MATCHES</div>
           </RetroCard>
+          <RetroCard className="text-center p-3">
+            <div className="text-accent text-lg font-bold">
+              {currentHighScore || '-'}
+            </div>
+            <div className="text-muted-foreground text-[9px] mt-1">HIGH</div>
+          </RetroCard>
         </div>
 
         {/* Game Board */}
         <RetroCard className="p-4 mb-6">
-          <div className={`grid ${gridCols} gap-2`}>
+          <div 
+            className={`grid ${gridCols} gap-2`}
+            style={{
+              gridTemplateColumns: `repeat(${config.cols}, minmax(0, 1fr))`,
+            }}
+          >
             {cards.map((card, index) => (
               <button
                 key={card.id}
@@ -259,58 +352,18 @@ const MemoryGame = () => {
                 `}
               >
                 {card.isFlipped || card.isMatched ? (
-                  <span className="text-2xl sm:text-3xl">{card.symbol}</span>
+                  <span className={`${config.cols <= 4 ? 'text-2xl sm:text-3xl' : config.cols === 5 ? 'text-xl sm:text-2xl' : 'text-lg sm:text-xl'}`}>
+                    {card.symbol}
+                  </span>
                 ) : (
-                  <span className="text-2xl sm:text-3xl opacity-0">?</span>
+                  <span className={`${config.cols <= 4 ? 'text-2xl sm:text-3xl' : config.cols === 5 ? 'text-xl sm:text-2xl' : 'text-lg sm:text-xl'} opacity-0`}>
+                    ?
+                  </span>
                 )}
               </button>
             ))}
           </div>
         </RetroCard>
-
-        {/* Game Won Overlay - Only show if name input is closed */}
-        {gameWon && !showNameInput && (
-          <RetroCard className="absolute inset-0 flex items-center justify-center bg-background/90 z-50">
-            <div className="text-center p-8">
-              <Brain className="mx-auto mb-4 text-accent" size={64} />
-              <h2 className="text-accent text-xl uppercase mb-4">
-                YOU WIN!
-              </h2>
-              <p className="text-foreground text-sm mb-2">
-                MOVES: {finalMoves}
-              </p>
-              <p className="text-accent text-sm mb-2">
-                SCORE: {finalScore}
-              </p>
-              {finalScore >= currentHighScore && (
-                <p className="text-accent text-xs mb-6">NEW HIGH SCORE!</p>
-              )}
-              <div className="flex gap-3 justify-center flex-wrap">
-                <RetroButton variant="primary" onClick={resetGame}>
-                  PLAY AGAIN
-                </RetroButton>
-                <RetroButton
-                  variant="ghost"
-                  onClick={() => {
-                    soundPlayer.playSelect();
-                    navigate('/play');
-                  }}
-                >
-                  MENU
-                </RetroButton>
-                <RetroButton
-                  variant="ghost"
-                  onClick={() => {
-                    soundPlayer.playSelect();
-                    navigate('/leaderboard/game_memory');
-                  }}
-                >
-                  LEADERBOARD
-                </RetroButton>
-              </div>
-            </div>
-          </RetroCard>
-        )}
 
         {/* Name Input Dialog */}
         <NameInputDialog
@@ -321,6 +374,57 @@ const MemoryGame = () => {
           score={finalScore}
           level={level}
         />
+
+        {/* Game Won Overlay - Only show if name input is closed */}
+        {gameWon && !showNameInput && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-sm">
+            <RetroCard className="mx-auto max-w-md w-full">
+              <div className="text-center p-8">
+                <Brain className="mx-auto mb-4 text-accent" size={64} />
+                <h2 className="text-accent text-xl uppercase mb-4">
+                  YOU WIN!
+                </h2>
+                <p className="text-foreground text-sm mb-1">
+                  MOVES: {finalMoves}
+                </p>
+                <p className="text-foreground text-sm mb-1">
+                  TIME: {Math.floor(timeElapsed / 60)}:{(timeElapsed % 60).toString().padStart(2, '0')}
+                </p>
+                <p className="text-accent text-lg font-bold mb-2">
+                  SCORE: {finalScore.toLocaleString()}
+                </p>
+                {((finalScore > currentHighScore) || (currentHighScore === 0 && finalScore > 0)) && (
+                  <p className="text-accent text-xs mb-6 blink">NEW HIGH SCORE!</p>
+                )}
+                <div className="flex flex-col gap-3 items-center">
+                  <div className="flex gap-3 justify-center">
+                    <RetroButton
+                      variant="ghost"
+                      onClick={() => {
+                        soundPlayer.playSelect();
+                        navigate('/play');
+                      }}
+                    >
+                      MENU
+                    </RetroButton>
+                    <RetroButton
+                      variant="ghost"
+                      onClick={() => {
+                        soundPlayer.playSelect();
+                        navigate('/leaderboard/game_memory');
+                      }}
+                    >
+                      LEADERBOARD
+                    </RetroButton>
+                  </div>
+                  <RetroButton variant="primary" onClick={resetGame}>
+                    PLAY AGAIN
+                  </RetroButton>
+                </div>
+              </div>
+            </RetroCard>
+          </div>
+        )}
 
         {/* Instructions */}
         <RetroCard className="text-center p-4">

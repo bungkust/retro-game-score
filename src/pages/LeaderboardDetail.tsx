@@ -147,9 +147,9 @@ const LeaderboardDetail = () => {
                               </span>
                             </div>
                           )}
-                          <div className="flex items-center gap-2">
-                            <span className="text-foreground text-xs sm:text-sm uppercase truncate">
-                              {player.name}
+                        <div className="flex items-center gap-2">
+                          <span className="text-foreground text-xs sm:text-sm uppercase truncate">
+                            {player.name}
                             </span>
                           </div>
                         </div>
@@ -158,7 +158,7 @@ const LeaderboardDetail = () => {
 
                     <div className="flex items-center gap-2 shrink-0">
                       <div className="text-accent text-base sm:text-lg font-bold min-w-[60px] text-right">
-                        {player.score}
+                            {player.score}
                       </div>
                     </div>
                   </RetroCard>

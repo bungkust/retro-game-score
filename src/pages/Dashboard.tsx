@@ -229,7 +229,7 @@ const Dashboard = () => {
                   SEMUA LEADERBOARD
                 </h2>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {leaderboards.map((lb) => {
                   const sortedPlayers = [...lb.players].sort((a, b) => {
                     if (lb.sortOrder === 'highest') {
@@ -240,46 +240,46 @@ const Dashboard = () => {
                   const topScore = sortedPlayers.length > 0 ? sortedPlayers[0].score : 0;
                   
                   return (
-                    <RetroCard
-                      key={lb.id}
-                      className="cursor-pointer hover:scale-105 transition-transform animate-pixel-slide-in"
-                      onClick={() => navigate(`/leaderboard/${lb.id}`)}
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <h3 className="text-primary text-sm sm:text-base uppercase flex-1 break-words">
-                          {lb.name}
-                        </h3>
-                        <Trophy className="text-accent shrink-0 ml-2" size={20} />
-                      </div>
-                      
-                      {lb.description && (
-                        <p className="text-muted-foreground text-[10px] mb-3 line-clamp-2">
-                          {lb.description}
-                        </p>
-                      )}
+              <RetroCard
+                key={lb.id}
+                className="cursor-pointer hover:scale-105 transition-transform animate-pixel-slide-in"
+                onClick={() => navigate(`/leaderboard/${lb.id}`)}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <h3 className="text-primary text-sm sm:text-base uppercase flex-1 break-words">
+                    {lb.name}
+                  </h3>
+                  <Trophy className="text-accent shrink-0 ml-2" size={20} />
+                </div>
+                
+                {lb.description && (
+                  <p className="text-muted-foreground text-[10px] mb-3 line-clamp-2">
+                    {lb.description}
+                  </p>
+                )}
 
-                      <div className="flex flex-wrap gap-2 text-[10px] mb-3">
-                        <span className="px-2 py-1 bg-muted text-foreground border border-border">
-                          {lb.scoreMode === 'win_count' ? 'WIN COUNT' : 'TOTAL POINTS'}
-                        </span>
-                        <span className="px-2 py-1 bg-muted text-foreground border border-border">
-                          {lb.sortOrder === 'highest' ? '↑ HIGH' : '↓ LOW'}
-                        </span>
-                      </div>
+                <div className="flex flex-wrap gap-2 text-[10px] mb-3">
+                  <span className="px-2 py-1 bg-muted text-foreground border border-border">
+                    {lb.scoreMode === 'win_count' ? 'WIN COUNT' : 'TOTAL POINTS'}
+                  </span>
+                  <span className="px-2 py-1 bg-muted text-foreground border border-border">
+                    {lb.sortOrder === 'highest' ? '↑ HIGH' : '↓ LOW'}
+                  </span>
+                </div>
 
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                        <span>{lb.players.length} PEMAIN</span>
-                        {lb.players.length > 0 && (
-                          <span className="text-accent">
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                  <span>{lb.players.length} PEMAIN</span>
+                  {lb.players.length > 0 && (
+                    <span className="text-accent">
                             TOP: {topScore}
-                          </span>
-                        )}
-                      </div>
-                    </RetroCard>
+                    </span>
+                  )}
+                </div>
+              </RetroCard>
                   );
                 })}
               </div>
-            </div>
+          </div>
           </>
         )}
       </div>

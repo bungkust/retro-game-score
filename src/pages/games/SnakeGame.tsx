@@ -38,8 +38,11 @@ const SnakeGame = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [showNameInput, setShowNameInput] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [gameStarted, setGameStarted] = useState(false);
   const directionRef = useRef<Position>(INITIAL_DIRECTION);
   const gameLoopRef = useRef<number | null>(null);
+  const countdownRef = useRef<number | null>(null);
 
   const currentLevelConfig = LEVELS[level - 1];
   const currentSpeed = currentLevelConfig.speed;
@@ -51,32 +54,101 @@ const SnakeGame = () => {
   const sortedPlayers = useMemo(() => [...leaderboard.players].sort((a, b) => b.score - a.score), [leaderboard.players]);
   const currentHighScore = sortedPlayers[0]?.score || 0;
 
-  // Generate random food position (ensured within grid bounds)
+  // Generate random food position (ensured within grid bounds and not on snake)
   const generateFood = useCallback((snakeBody: Position[]): Position => {
-    let newFood: Position;
-    let attempts = 0;
-    const maxAttempts = GRID_SIZE * GRID_SIZE;
+    // Generate all valid positions (within grid bounds)
+    const validPositions: Position[] = [];
+    for (let x = 0; x < GRID_SIZE; x++) {
+      for (let y = 0; y < GRID_SIZE; y++) {
+        // Check if position is not occupied by snake
+        const isOccupied = snakeBody.some(segment => segment.x === x && segment.y === y);
+        if (!isOccupied) {
+          validPositions.push({ x, y });
+        }
+      }
+    }
     
-    do {
-      newFood = {
-        x: Math.floor(Math.random() * GRID_SIZE),
-        y: Math.floor(Math.random() * GRID_SIZE),
-      };
-      // Clamp to ensure within bounds
-      newFood.x = Math.max(0, Math.min(GRID_SIZE - 1, newFood.x));
-      newFood.y = Math.max(0, Math.min(GRID_SIZE - 1, newFood.y));
-      attempts++;
-    } while (
-      snakeBody.some(segment => segment.x === newFood.x && segment.y === newFood.y) &&
-      attempts < maxAttempts
-    );
+    // If no valid positions (snake fills entire grid), return a default position
+    // This shouldn't happen in normal gameplay
+    if (validPositions.length === 0) {
+      console.warn('No valid positions for food! Snake may have filled the grid.');
+      return { x: Math.floor(GRID_SIZE / 2), y: Math.floor(GRID_SIZE / 2) };
+    }
+    
+    // Pick a random valid position
+    const randomIndex = Math.floor(Math.random() * validPositions.length);
+    const newFood = validPositions[randomIndex];
+    
+    // Final validation - ensure position is within bounds (should always be true)
+    if (newFood.x < 0 || newFood.x >= GRID_SIZE || newFood.y < 0 || newFood.y >= GRID_SIZE) {
+      console.error('Generated food position is out of bounds!', newFood);
+      // Fallback to center position
+      return { x: Math.floor(GRID_SIZE / 2), y: Math.floor(GRID_SIZE / 2) };
+    }
     
     return newFood;
   }, []);
 
+  // Initialize countdown when game needs to start (only once when gameStarted becomes false)
+  useEffect(() => {
+    // Start countdown when game is not started, not over, countdown is null, and name input is not showing
+    // This should only happen when resetGame is called or component first mounts
+    if (!gameStarted && !gameOver && countdown === null && !showNameInput) {
+      // Set initial countdown
+      setCountdown(5);
+      soundPlayer.playSelect();
+    }
+  }, [gameStarted, gameOver, showNameInput]); // Depend on these states, not countdown
+
+  // Countdown timer effect - handles countdown decrement
+  useEffect(() => {
+    // Only start timer if countdown is active (not null and > 0)
+    if (countdown === null || countdown <= 0) {
+      // Clear any existing timer
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+        countdownRef.current = null;
+      }
+      // If countdown reached exactly 0, start the game
+      if (countdown === 0) {
+        // Use setTimeout to avoid state update during render
+        setTimeout(() => {
+          setGameStarted(true);
+          setCountdown(null);
+          soundPlayer.playCoin(); // Play sound when game starts
+        }, 0);
+      }
+      return;
+    }
+
+    // Clear any existing timer before starting a new one
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+    }
+
+    // Start countdown timer
+    countdownRef.current = window.setInterval(() => {
+      setCountdown((prev) => {
+        if (prev === null) return null;
+        if (prev <= 1) {
+          return 0; // Signal that countdown is done
+        }
+        soundPlayer.playSelect(); // Play sound for each countdown number
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+        countdownRef.current = null;
+      }
+    };
+  }, [countdown]);
+
   // Game loop
   useEffect(() => {
-    if (gameOver || isPaused) return;
+    if (gameOver || isPaused || !gameStarted || countdown !== null) return;
 
     const moveSnake = () => {
       setSnake((prevSnake) => {
@@ -85,34 +157,44 @@ const SnakeGame = () => {
         const currentDirection = directionRef.current;
 
         // Move head
-        head.x += currentDirection.x;
-        head.y += currentDirection.y;
+        const newHeadX = head.x + currentDirection.x;
+        const newHeadY = head.y + currentDirection.y;
 
-        // Check wall collision (must check before clamping to allow game over)
+        // Check wall collision BEFORE moving (prevent snake from leaving grid)
         if (
-          head.x < 0 ||
-          head.x >= GRID_SIZE ||
-          head.y < 0 ||
-          head.y >= GRID_SIZE
+          newHeadX < 0 ||
+          newHeadX >= GRID_SIZE ||
+          newHeadY < 0 ||
+          newHeadY >= GRID_SIZE
         ) {
+          // Snake hit wall - game over
+          setFinalScore(score);
           setGameOver(true);
           setShowNameInput(true);
           soundPlayer.playError();
           return prevSnake;
         }
 
+        // Update head position (guaranteed to be within bounds)
+        head.x = newHeadX;
+        head.y = newHeadY;
+
         // Check self collision (before adding head to snake)
+        // Check if new head position overlaps with any existing segment
         if (
           newSnake.some(
             (segment) => segment.x === head.x && segment.y === head.y
           )
         ) {
+          // Snake hit itself - game over
+          setFinalScore(score);
           setGameOver(true);
           setShowNameInput(true);
           soundPlayer.playError();
           return prevSnake;
         }
 
+        // Add new head to snake (position is guaranteed to be within bounds)
         newSnake.unshift(head);
 
         // Check food collision
@@ -139,11 +221,11 @@ const SnakeGame = () => {
         clearInterval(gameLoopRef.current);
       }
     };
-  }, [food, gameOver, isPaused, generateFood, currentSpeed, scoreMultiplier]);
+  }, [food, gameOver, isPaused, gameStarted, countdown, generateFood, currentSpeed, scoreMultiplier]);
 
   // Handle direction change (used by both keyboard and touch controls)
   const changeDirection = useCallback((newDirection: Position) => {
-    if (gameOver || isPaused) return;
+    if (gameOver || isPaused || !gameStarted || countdown !== null) return;
     
     const currentDir = directionRef.current;
     
@@ -161,7 +243,7 @@ const SnakeGame = () => {
       setDirection(newDirection);
       soundPlayer.playSelect();
     }
-  }, [gameOver, isPaused]);
+  }, [gameOver, isPaused, gameStarted, countdown]);
 
   // Handle keyboard input
   useEffect(() => {
@@ -190,13 +272,15 @@ const SnakeGame = () => {
         }
       } else if (key === ' ') {
         e.preventDefault();
-        setIsPaused((prev) => !prev);
+        if (gameStarted && countdown === null) {
+          setIsPaused((prev) => !prev);
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [gameOver, isPaused, changeDirection]);
+  }, [gameOver, isPaused, gameStarted, countdown, changeDirection]);
 
   const resetGame = () => {
     const initialSnake = [...INITIAL_SNAKE];
@@ -209,12 +293,18 @@ const SnakeGame = () => {
     setFinalScore(0);
     setIsPaused(false);
     setShowNameInput(false);
+    setGameStarted(false); // Reset game started state
+    setCountdown(null); // Reset countdown
     soundPlayer.playSelect();
   };
 
-  // Capture final score when game over
+  // Capture final score when game over (or when score changes during game)
   useEffect(() => {
-    if (gameOver && score > 0) {
+    if (!gameOver) {
+      // Update final score while game is playing
+      setFinalScore(score);
+    } else if (gameOver && score > 0) {
+      // Ensure final score is set when game over
       setFinalScore(score);
     }
   }, [gameOver, score]);
@@ -247,6 +337,7 @@ const SnakeGame = () => {
                 variant="ghost"
                 size="sm"
                 onClick={togglePause}
+                disabled={!gameStarted || countdown !== null}
                 className="flex items-center gap-1"
               >
                 {isPaused ? <Play size={14} /> : <Pause size={14} />}
@@ -273,17 +364,15 @@ const SnakeGame = () => {
                 variant={level === levelConfig.level ? 'primary' : 'ghost'}
                 size="sm"
                 onClick={() => {
-                  // Only allow level change if game is over, paused, or not started
-                  if (gameOver || isPaused || score === 0) {
+                  // Allow level change at any time (will reset game and start countdown)
+                  if (levelConfig.level !== level) {
                     setLevel(levelConfig.level);
                     soundPlayer.playSelect();
-                    // Reset game if changing level
-                    if (gameOver || isPaused) {
-                      resetGame();
-                    }
+                    // Reset game to start countdown
+                    resetGame();
                   }
                 }}
-                disabled={score > 0 && !gameOver && !isPaused}
+                disabled={countdown !== null}
                 className="text-xs"
               >
                 {levelConfig.level}
@@ -342,9 +431,11 @@ const SnakeGame = () => {
 
             {/* Snake */}
             {snake.map((segment, index) => {
-              // Clamp segment position to ensure it's within grid bounds
-              const clampedX = Math.max(0, Math.min(GRID_SIZE - 1, segment.x));
-              const clampedY = Math.max(0, Math.min(GRID_SIZE - 1, segment.y));
+              // Validate segment position is within bounds (should always be, but safety check)
+              if (segment.x < 0 || segment.x >= GRID_SIZE || segment.y < 0 || segment.y >= GRID_SIZE) {
+                // Position is out of bounds - don't render this segment
+                return null;
+              }
               
               return (
                 <div
@@ -353,8 +444,8 @@ const SnakeGame = () => {
                     index === 0 ? 'bg-accent' : 'bg-primary'
                   }`}
                   style={{
-                    left: `${clampedX * 16}px`,
-                    top: `${clampedY * 16}px`,
+                    left: `${segment.x * 16}px`,
+                    top: `${segment.y * 16}px`,
                     width: '14px',
                     height: '14px',
                     border: '1px solid hsl(var(--background))',
@@ -364,64 +455,62 @@ const SnakeGame = () => {
             })}
 
             {/* Food */}
-            {(() => {
-              // Clamp food position to ensure it's within grid bounds
-              const clampedX = Math.max(0, Math.min(GRID_SIZE - 1, food.x));
-              const clampedY = Math.max(0, Math.min(GRID_SIZE - 1, food.y));
-              
-              return (
-                <div
-                  className="absolute bg-secondary"
-                  style={{
-                    left: `${clampedX * 16}px`,
-                    top: `${clampedY * 16}px`,
-                    width: '14px',
-                    height: '14px',
-                    border: '1px solid hsl(var(--background))',
-                    animation: 'pulse 0.5s infinite',
-                  }}
-                />
-              );
-            })()}
+            {food.x >= 0 && food.x < GRID_SIZE && food.y >= 0 && food.y < GRID_SIZE && (
+              <div
+                className="absolute bg-secondary"
+                style={{
+                  left: `${food.x * 16}px`,
+                  top: `${food.y * 16}px`,
+                  width: '14px',
+                  height: '14px',
+                  border: '1px solid hsl(var(--background))',
+                  animation: 'pulse 0.5s infinite',
+                }}
+              />
+            )}
           </div>
         </RetroCard>
 
         {/* Game Over Overlay - Only show if name input is closed */}
         {gameOver && !showNameInput && (
-          <RetroCard className="absolute inset-0 flex items-center justify-center bg-background/90 z-50">
-            <div className="text-center p-8">
-              <h2 className="text-destructive text-xl uppercase mb-4">
-                GAME OVER
-              </h2>
-              <p className="text-foreground text-sm mb-2">SCORE: {finalScore}</p>
-              <p className="text-muted-foreground text-xs mb-6">
-                HIGH SCORE: {currentHighScore}
-              </p>
-              <div className="flex gap-3 justify-center">
-                <RetroButton variant="primary" onClick={resetGame}>
-                  PLAY AGAIN
-                </RetroButton>
-                <RetroButton
-                  variant="ghost"
-                  onClick={() => {
-                    soundPlayer.playSelect();
-                    navigate('/play');
-                  }}
-                >
-                  MENU
-                </RetroButton>
-                <RetroButton
-                  variant="ghost"
-                  onClick={() => {
-                    soundPlayer.playSelect();
-                    navigate('/leaderboard/game_snake');
-                  }}
-                >
-                  LEADERBOARD
-                </RetroButton>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-sm">
+            <RetroCard className="mx-auto max-w-md w-full">
+              <div className="text-center p-8">
+                <h2 className="text-destructive text-xl uppercase mb-4">
+                  GAME OVER
+                </h2>
+                <p className="text-foreground text-sm mb-2">SCORE: {finalScore}</p>
+                <p className="text-muted-foreground text-xs mb-6">
+                  HIGH SCORE: {currentHighScore}
+                </p>
+                <div className="flex flex-col gap-3 items-center">
+                  <div className="flex gap-3 justify-center">
+                    <RetroButton
+                      variant="ghost"
+                      onClick={() => {
+                        soundPlayer.playSelect();
+                        navigate('/play');
+                      }}
+                    >
+                      MENU
+                    </RetroButton>
+                    <RetroButton
+                      variant="ghost"
+                      onClick={() => {
+                        soundPlayer.playSelect();
+                        navigate('/leaderboard/game_snake');
+                      }}
+                    >
+                      LEADERBOARD
+                    </RetroButton>
+                  </div>
+                  <RetroButton variant="primary" onClick={resetGame}>
+                    PLAY AGAIN
+                  </RetroButton>
+                </div>
               </div>
-            </div>
-          </RetroCard>
+            </RetroCard>
+          </div>
         )}
 
         {/* Name Input Dialog */}
@@ -434,16 +523,36 @@ const SnakeGame = () => {
           level={level}
         />
 
+        {/* Countdown Overlay - Only show when countdown is active (5, 4, 3, 2, 1, GO!) */}
+        {countdown !== null && countdown > 0 && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-sm">
+            <RetroCard className="mx-auto max-w-md w-full">
+              <div className="text-center p-8">
+                <div className={`text-accent text-8xl sm:text-9xl font-bold mb-4 animate-pulse transition-all duration-300 ${
+                  countdown === 1 ? 'blink glow-yellow scale-125' : countdown === 2 ? 'scale-110' : ''
+                }`}>
+                  {countdown === 1 ? 'GO!' : countdown}
+                </div>
+                <p className="text-muted-foreground text-xs uppercase tracking-wider">
+                  GET READY!
+                </p>
+              </div>
+            </RetroCard>
+          </div>
+        )}
+
         {/* Pause Overlay */}
-        {isPaused && !gameOver && (
-          <RetroCard className="absolute inset-0 flex items-center justify-center bg-background/90 z-40">
-            <div className="text-center p-8">
-              <h2 className="text-primary text-xl uppercase mb-4">PAUSED</h2>
-              <RetroButton variant="primary" onClick={togglePause}>
-                RESUME
-              </RetroButton>
-            </div>
-          </RetroCard>
+        {isPaused && !gameOver && gameStarted && countdown === null && (
+          <div className="fixed inset-0 z-40 flex items-center justify-center bg-background/90 backdrop-blur-sm">
+            <RetroCard className="mx-auto max-w-md w-full">
+              <div className="text-center p-8">
+                <h2 className="text-primary text-xl uppercase mb-4">PAUSED</h2>
+                <RetroButton variant="primary" onClick={togglePause}>
+                  RESUME
+                </RetroButton>
+              </div>
+            </RetroCard>
+          </div>
         )}
 
         {/* Instructions - Desktop Only */}
@@ -466,14 +575,14 @@ const SnakeGame = () => {
                 {/* Up Button */}
                 <button
                   onClick={() => changeDirection({ x: 0, y: -1 })}
-                  disabled={gameOver || isPaused}
+                  disabled={gameOver || isPaused || !gameStarted || countdown !== null}
                   className={`
                     w-20 h-20 flex items-center justify-center
                     border-2 border-primary bg-muted
                     hover:bg-muted/80 active:bg-primary active:border-accent
                     disabled:opacity-50 disabled:cursor-not-allowed
                     transition-all touch-manipulation
-                    ${gameOver || isPaused ? '' : 'active:scale-95'}
+                    ${gameOver || isPaused || !gameStarted || countdown !== null ? '' : 'active:scale-95'}
                   `}
                   style={{ touchAction: 'manipulation' }}
                 >
@@ -484,14 +593,14 @@ const SnakeGame = () => {
                 <div className="flex items-center gap-4">
                   <button
                     onClick={() => changeDirection({ x: -1, y: 0 })}
-                    disabled={gameOver || isPaused}
+                    disabled={gameOver || isPaused || !gameStarted || countdown !== null}
                     className={`
                       w-20 h-20 flex items-center justify-center
                       border-2 border-primary bg-muted
                       hover:bg-muted/80 active:bg-primary active:border-accent
                       disabled:opacity-50 disabled:cursor-not-allowed
                       transition-all touch-manipulation
-                      ${gameOver || isPaused ? '' : 'active:scale-95'}
+                      ${gameOver || isPaused || !gameStarted || countdown !== null ? '' : 'active:scale-95'}
                     `}
                     style={{ touchAction: 'manipulation' }}
                   >
@@ -500,10 +609,12 @@ const SnakeGame = () => {
                   
                   <button
                     onClick={togglePause}
+                    disabled={!gameStarted || countdown !== null}
                     className={`
                       w-20 h-20 flex items-center justify-center
                       border-2 border-primary bg-muted
                       hover:bg-muted/80 active:bg-primary active:border-accent
+                      disabled:opacity-50 disabled:cursor-not-allowed
                       transition-all touch-manipulation active:scale-95
                     `}
                     style={{ touchAction: 'manipulation' }}
@@ -517,14 +628,14 @@ const SnakeGame = () => {
                   
                   <button
                     onClick={() => changeDirection({ x: 1, y: 0 })}
-                    disabled={gameOver || isPaused}
+                    disabled={gameOver || isPaused || !gameStarted || countdown !== null}
                     className={`
                       w-20 h-20 flex items-center justify-center
                       border-2 border-primary bg-muted
                       hover:bg-muted/80 active:bg-primary active:border-accent
                       disabled:opacity-50 disabled:cursor-not-allowed
                       transition-all touch-manipulation
-                      ${gameOver || isPaused ? '' : 'active:scale-95'}
+                      ${gameOver || isPaused || !gameStarted || countdown !== null ? '' : 'active:scale-95'}
                     `}
                     style={{ touchAction: 'manipulation' }}
                   >
@@ -535,14 +646,14 @@ const SnakeGame = () => {
                 {/* Down Button */}
                 <button
                   onClick={() => changeDirection({ x: 0, y: 1 })}
-                  disabled={gameOver || isPaused}
+                  disabled={gameOver || isPaused || !gameStarted || countdown !== null}
                   className={`
                     w-20 h-20 flex items-center justify-center
                     border-2 border-primary bg-muted
                     hover:bg-muted/80 active:bg-primary active:border-accent
                     disabled:opacity-50 disabled:cursor-not-allowed
                     transition-all touch-manipulation
-                    ${gameOver || isPaused ? '' : 'active:scale-95'}
+                    ${gameOver || isPaused || !gameStarted || countdown !== null ? '' : 'active:scale-95'}
                   `}
                   style={{ touchAction: 'manipulation' }}
                 >

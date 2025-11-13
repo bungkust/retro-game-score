@@ -60,7 +60,7 @@ export const NameInputDialog = ({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-background/95 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+    <div className="fixed inset-0 bg-background/95 flex items-center justify-center p-4 z-[60] backdrop-blur-sm">
       <RetroCard className="w-full max-w-md animate-pixel-slide-in">
         <div className="text-center p-6">
           <h2 className="text-primary text-lg sm:text-xl uppercase mb-4">
@@ -68,7 +68,7 @@ export const NameInputDialog = ({
           </h2>
           
           {score !== undefined && (
-            <p className="text-accent text-sm mb-2">SCORE: {score}</p>
+            <p className="text-accent text-lg font-bold mb-2">SCORE: {score.toLocaleString()}</p>
           )}
           
           {level !== undefined && (
