@@ -1,8 +1,28 @@
 {
-  "name": "vite_react_shadcn_ts",
-  "private": true,
-  "version": "0.0.0",
+  "name": "retro-game-score",
+  "version": "1.0.0",
+  "description": "Satu Papan Skor untuk Semua Permainan - Simple retro-style leaderboard for all your family games",
   "type": "module",
+  "license": "MIT",
+  "author": "Bungkust",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bungkust/retro-game-score.git"
+  },
+  "homepage": "https://github.com/bungkust/retro-game-score#readme",
+  "bugs": {
+    "url": "https://github.com/bungkust/retro-game-score/issues"
+  },
+  "keywords": [
+    "leaderboard",
+    "scoreboard",
+    "retro",
+    "game",
+    "pwa",
+    "react",
+    "typescript",
+    "vite"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",

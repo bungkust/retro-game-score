@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discussions
+    url: https://github.com/bungkust/retro-game-score/discussions
+    about: Ask questions and discuss ideas
+  - name: 📖 Documentation
+    url: https://github.com/bungkust/retro-game-score#readme
+    about: Check the documentation
+
