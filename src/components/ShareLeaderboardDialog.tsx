@@ -145,6 +145,15 @@ export const ShareLeaderboardDialog = ({
   const INSTAGRAM_STORY_WIDTH = 1080;
   const INSTAGRAM_STORY_HEIGHT = 1920;
 
+  // Wait for fonts to load
+  const waitForFonts = async () => {
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+    // Additional wait for font rendering
+    await new Promise(resolve => setTimeout(resolve, 200));
+  };
+
   const generateImage = async () => {
     if (!leaderboardElementRef?.current) {
       toast.error('ELEMENT TIDAK DITEMUKAN!');
@@ -155,17 +164,22 @@ export const ShareLeaderboardDialog = ({
     try {
       const backgroundColor = getBackgroundColor();
       
-      // Capture leaderboard content with higher scale and window dimensions for better quality
-      // Use window dimensions to ensure full width is captured (prevents truncation on mobile)
-      const sourceCanvas = await html2canvas(leaderboardElementRef.current, {
+      // Wait for fonts to be fully loaded before capturing
+      await waitForFonts();
+      
+      const element = leaderboardElementRef.current;
+      
+      // Capture leaderboard content using html2canvas (more reliable for fonts)
+      // Simple configuration that works better with loaded fonts
+      const sourceCanvas = await html2canvas(element, {
         backgroundColor: backgroundColor,
-        scale: 3, // Higher scale for better quality
-        logging: false,
+        scale: 2, // Higher quality
         useCORS: true,
-        windowWidth: Math.max(leaderboardElementRef.current.scrollWidth, 1080), // Ensure min width
-        windowHeight: leaderboardElementRef.current.scrollHeight,
-        width: Math.max(leaderboardElementRef.current.scrollWidth, 1080),
-        height: leaderboardElementRef.current.scrollHeight,
+        logging: false,
+        allowTaint: false,
+        // Capture full content including scrollable areas
+        scrollX: 0,
+        scrollY: 0,
       });
 
       // Create fixed portrait canvas for Instagram Story (1080x1920)
@@ -183,11 +197,11 @@ export const ShareLeaderboardDialog = ({
       ctx.fillStyle = backgroundColor;
       ctx.fillRect(0, 0, INSTAGRAM_STORY_WIDTH, INSTAGRAM_STORY_HEIGHT);
 
-      // Scale content to fit width, keep aspect ratio, position at top (not centered)
+      // Scale content to fit width, keep aspect ratio, position at top (match app layout)
       const scale = INSTAGRAM_STORY_WIDTH / sourceCanvas.width;
       const scaledHeight = sourceCanvas.height * scale;
       
-      // Position at top, horizontally centered but vertically at top
+      // Position at top, horizontally centered but vertically at top (not centered)
       let offsetX = 0;
       let offsetY = 0;
       let drawWidth = INSTAGRAM_STORY_WIDTH;
@@ -202,7 +216,7 @@ export const ShareLeaderboardDialog = ({
         offsetX = (INSTAGRAM_STORY_WIDTH - drawWidth) / 2;
       }
 
-      // Draw leaderboard content at top of portrait canvas (not centered vertically)
+      // Draw leaderboard content at top of portrait canvas (match app layout, not centered vertically)
       ctx.drawImage(sourceCanvas, offsetX, offsetY, drawWidth, drawHeight);
 
       // Convert to blob and download
@@ -221,7 +235,7 @@ export const ShareLeaderboardDialog = ({
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
 
-        toast.success('GAMBAR TERDOWNLOAD! (Portrait 1080x1920)');
+        toast.success('GAMBAR TERDOWNLOAD! (1080x1920 - Ready for Instagram Story!)');
       }, 'image/png', 1.0);
     } catch (err) {
       console.error('Error generating image:', err);
@@ -242,18 +256,23 @@ export const ShareLeaderboardDialog = ({
     try {
       const backgroundColor = getBackgroundColor();
       
-          // Capture leaderboard content with higher scale for better quality
-          // Use window dimensions to ensure full width is captured (prevents truncation on mobile)
-          const sourceCanvas = await html2canvas(leaderboardElementRef.current, {
-            backgroundColor: backgroundColor,
-            scale: 3, // Higher scale for better Instagram quality
-            logging: false,
-            useCORS: true,
-            windowWidth: Math.max(leaderboardElementRef.current.scrollWidth, 1080), // Ensure min width
-            windowHeight: leaderboardElementRef.current.scrollHeight,
-            width: Math.max(leaderboardElementRef.current.scrollWidth, 1080),
-            height: leaderboardElementRef.current.scrollHeight,
-          });
+      // Wait for fonts to be fully loaded before capturing
+      await waitForFonts();
+      
+      const element = leaderboardElementRef.current;
+      
+      // Capture leaderboard content using html2canvas (more reliable for fonts)
+      // Simple configuration that works better with loaded fonts
+      const sourceCanvas = await html2canvas(element, {
+        backgroundColor: backgroundColor,
+        scale: 2, // Higher quality
+        useCORS: true,
+        logging: false,
+        allowTaint: false,
+        // Capture full content including scrollable areas
+        scrollX: 0,
+        scrollY: 0,
+      });
 
       // Create fixed portrait canvas for Instagram Story (1080x1920)
       const portraitCanvas = document.createElement('canvas');
@@ -270,11 +289,11 @@ export const ShareLeaderboardDialog = ({
       ctx.fillStyle = backgroundColor;
       ctx.fillRect(0, 0, INSTAGRAM_STORY_WIDTH, INSTAGRAM_STORY_HEIGHT);
 
-      // Scale content to fit width, keep aspect ratio, position at top (not centered)
+      // Scale content to fit width, keep aspect ratio, position at top (match app layout)
       const scale = INSTAGRAM_STORY_WIDTH / sourceCanvas.width;
       const scaledHeight = sourceCanvas.height * scale;
       
-      // Position at top, horizontally centered but vertically at top
+      // Position at top, horizontally centered but vertically at top (not centered)
       let offsetX = 0;
       let offsetY = 0;
       let drawWidth = INSTAGRAM_STORY_WIDTH;
@@ -289,7 +308,7 @@ export const ShareLeaderboardDialog = ({
         offsetX = (INSTAGRAM_STORY_WIDTH - drawWidth) / 2;
       }
 
-      // Draw leaderboard content at top of portrait canvas (not centered vertically)
+      // Draw leaderboard content at top of portrait canvas (match app layout, not centered vertically)
       ctx.drawImage(sourceCanvas, offsetX, offsetY, drawWidth, drawHeight);
 
       // Convert to blob and download with Instagram-friendly name
