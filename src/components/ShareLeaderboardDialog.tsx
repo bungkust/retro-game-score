@@ -155,12 +155,17 @@ export const ShareLeaderboardDialog = ({
     try {
       const backgroundColor = getBackgroundColor();
       
-      // Capture leaderboard content
+      // Capture leaderboard content with higher scale and window dimensions for better quality
+      // Use window dimensions to ensure full width is captured (prevents truncation on mobile)
       const sourceCanvas = await html2canvas(leaderboardElementRef.current, {
         backgroundColor: backgroundColor,
-        scale: 2,
+        scale: 3, // Higher scale for better quality
         logging: false,
         useCORS: true,
+        windowWidth: Math.max(leaderboardElementRef.current.scrollWidth, 1080), // Ensure min width
+        windowHeight: leaderboardElementRef.current.scrollHeight,
+        width: Math.max(leaderboardElementRef.current.scrollWidth, 1080),
+        height: leaderboardElementRef.current.scrollHeight,
       });
 
       // Create fixed portrait canvas for Instagram Story (1080x1920)
@@ -237,15 +242,18 @@ export const ShareLeaderboardDialog = ({
     try {
       const backgroundColor = getBackgroundColor();
       
-      // Capture leaderboard content with higher scale for better quality
-      const sourceCanvas = await html2canvas(leaderboardElementRef.current, {
-        backgroundColor: backgroundColor,
-        scale: 3, // Higher scale for better Instagram quality
-        logging: false,
-        useCORS: true,
-        windowWidth: leaderboardElementRef.current.scrollWidth,
-        windowHeight: leaderboardElementRef.current.scrollHeight,
-      });
+          // Capture leaderboard content with higher scale for better quality
+          // Use window dimensions to ensure full width is captured (prevents truncation on mobile)
+          const sourceCanvas = await html2canvas(leaderboardElementRef.current, {
+            backgroundColor: backgroundColor,
+            scale: 3, // Higher scale for better Instagram quality
+            logging: false,
+            useCORS: true,
+            windowWidth: Math.max(leaderboardElementRef.current.scrollWidth, 1080), // Ensure min width
+            windowHeight: leaderboardElementRef.current.scrollHeight,
+            width: Math.max(leaderboardElementRef.current.scrollWidth, 1080),
+            height: leaderboardElementRef.current.scrollHeight,
+          });
 
       // Create fixed portrait canvas for Instagram Story (1080x1920)
       const portraitCanvas = document.createElement('canvas');

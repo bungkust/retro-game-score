@@ -169,7 +169,7 @@ const LeaderboardDetail = () => {
                             </div>
                           )}
                         <div className="flex items-center gap-2">
-                          <span className="text-foreground text-xs sm:text-sm uppercase truncate">
+                          <span className="text-foreground text-xs sm:text-sm uppercase break-words">
                             {player.name}
                             </span>
                           </div>

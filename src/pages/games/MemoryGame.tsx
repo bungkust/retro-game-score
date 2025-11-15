@@ -303,7 +303,7 @@ const MemoryGame = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-3 gap-3 mb-6">
           <RetroCard className="text-center p-3">
             <div className="text-accent text-lg font-bold">{moves}</div>
             <div className="text-muted-foreground text-[9px] mt-1">MOVES</div>
@@ -319,12 +319,6 @@ const MemoryGame = () => {
               {matches}/{config.pairs}
             </div>
             <div className="text-muted-foreground text-[9px] mt-1">MATCHES</div>
-          </RetroCard>
-          <RetroCard className="text-center p-3">
-            <div className="text-accent text-lg font-bold">
-              {currentHighScore || '-'}
-            </div>
-            <div className="text-muted-foreground text-[9px] mt-1">HIGH</div>
           </RetroCard>
         </div>
 

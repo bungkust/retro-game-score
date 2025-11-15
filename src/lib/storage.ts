@@ -68,35 +68,20 @@ export const storage = {
   },
 
   // Add player to game leaderboard
+  // Always creates a new entry, even if player name already exists (allows multiple scores per name)
   addPlayerToGameLeaderboard(gameName: string, playerName: string, score: number, avatar?: string): void {
     const leaderboard = this.getOrCreateGameLeaderboard(gameName);
     const AVATARS = ['👑', '👻', '🚀', '⚔️', '⭐', '❤️', '💎', '🛡️', '🎮', '🏆', '🎯', '🎨', '🎪', '🎭', '🎸', '🎺'];
     const randomAvatar = avatar || AVATARS[Math.floor(Math.random() * AVATARS.length)];
     
-    // Check if player already exists (by name, case-insensitive)
-    const existingPlayerIndex = leaderboard.players.findIndex(
-      p => p.name.toUpperCase() === playerName.toUpperCase()
-    );
-    
-    if (existingPlayerIndex !== -1) {
-      // Update existing player if new score is higher
-      const existingPlayer = leaderboard.players[existingPlayerIndex];
-      if (score > existingPlayer.score) {
-        leaderboard.players[existingPlayerIndex] = {
-          ...existingPlayer,
-          score,
-        };
-      }
-    } else {
-      // Add new player
-      const newPlayer: Player = {
-        id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        name: playerName.toUpperCase(),
-        avatar: randomAvatar,
-        score,
-      };
-      leaderboard.players.push(newPlayer);
-    }
+    // Always add new player entry (allow same name with different scores)
+    const newPlayer: Player = {
+      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      name: playerName.toUpperCase(),
+      avatar: randomAvatar,
+      score,
+    };
+    leaderboard.players.push(newPlayer);
     
     // Sort players by score (highest first)
     leaderboard.players.sort((a, b) => b.score - a.score);
