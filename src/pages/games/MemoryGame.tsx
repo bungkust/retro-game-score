@@ -9,7 +9,16 @@ import { storage } from '@/lib/storage';
 import { soundPlayer } from '@/lib/sounds';
 import { toast } from 'sonner';
 
-const CARD_SYMBOLS = ['🎮', '🎯', '🎲', '🎪', '🎨', '🎭', '🎸', '🎺', '🏆', '⚽', '🏀', '🎾', '🏐', '🎱', '🎳', '🎯', '🎪', '🎨', '🎭', '🎸', '🎺', '🎷', '🎹', '🥁', '🎤', '🎧', '🎬', '🎨', '🎭', '🎪', '🎯', '🎲', '🎮', '🎰', '🎲', '🃏', '🀄', '🎴', '🎲', '🎯', '🎪', '🎨', '🎭', '🎸', '🎺', '🎷', '🎹', '🥁', '🎤', '🎧', '🎬'];
+// Unique card symbols - Level 5 needs 18 pairs (18 unique symbols)
+// Each symbol appears only once in this array (no duplicates)
+// Using Set to ensure uniqueness (removes any accidental duplicates)
+const CARD_SYMBOLS = Array.from(new Set([
+  '🎮', '🎯', '🎲', '🎪', '🎨', '🎭', '🎸', '🎺', '🏆', '⚽',
+  '🏀', '🎾', '🏐', '🎱', '🎳', '🎷', '🎹', '🥁', '🎤', '🎧',
+  '🎬', '🎰', '🃏', '🀄', '🎴', '🎵', '🎶', '🎼', '🎻', '🪗',
+  '🥊', '🥋', '🏅', '🎖️', '🏵️', '🎗️', '🎟️', '🎫', '🎪', '🎨', // These duplicates will be removed by Set
+  '🎭', '🎸', '🎺', '🎷', '🎹', '🥁', '🎤', '🎧' // These duplicates will be removed by Set
+]));
 // Level 1-5: Each level has different grid size, increasing difficulty
 const LEVELS = [
   { level: 1, rows: 3, cols: 4, pairs: 6, multiplier: 1 },    // 3x4 = 12 cards (6 pairs)
@@ -76,9 +85,32 @@ const MemoryGame = () => {
   // Initialize game
   const initializeGame = useCallback(() => {
     const config = currentLevelConfig;
-    // Get symbols for this level (based on pairs needed)
+    // Get unique symbols for this level (based on pairs needed)
+    // CARD_SYMBOLS is already unique (created with Set), so we can use it directly
+    // Take only the number of symbols needed for this level
     const symbols = CARD_SYMBOLS.slice(0, config.pairs);
+    
+    // Ensure we have enough unique symbols for this level
+    if (symbols.length < config.pairs) {
+      console.error(`Not enough unique symbols for level ${config.level}. Need ${config.pairs}, have ${symbols.length}`);
+      return;
+    }
+    
+    // Create pairs: each symbol appears exactly twice (once in symbols, duplicated in cardPairs)
+    // This ensures each symbol has exactly one pair (2 cards)
     const cardPairs = [...symbols, ...symbols];
+    
+    // Verify: each symbol should appear exactly twice
+    const symbolCounts = new Map<string, number>();
+    cardPairs.forEach(symbol => {
+      symbolCounts.set(symbol, (symbolCounts.get(symbol) || 0) + 1);
+    });
+    
+    // Check if any symbol appears more than twice (should not happen)
+    const hasInvalidPairs = Array.from(symbolCounts.values()).some(count => count !== 2);
+    if (hasInvalidPairs) {
+      console.error('Invalid card pairs: some symbols appear more than twice', symbolCounts);
+    }
     
     // Shuffle cards
     const shuffled = cardPairs
