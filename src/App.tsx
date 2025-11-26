@@ -14,6 +14,8 @@ import Play from "./pages/Play";
 import SnakeGame from "./pages/games/SnakeGame";
 import MemoryGame from "./pages/games/MemoryGame";
 import TicTacToeGame from "./pages/games/TicTacToeGame";
+import ConnectFourGame from "./pages/games/ConnectFourGame";
+import BattleshipGame from "./pages/games/BattleshipGame";
 import NotFound from "./pages/NotFound";
 import { BottomNavbar } from "./components/BottomNavbar";
 
@@ -46,6 +48,8 @@ const App = () => (
           <Route path="/play/snake" element={<SnakeGame />} />
           <Route path="/play/memory" element={<MemoryGame />} />
           <Route path="/play/tictactoe" element={<TicTacToeGame />} />
+          <Route path="/play/connectfour" element={<ConnectFourGame />} />
+          <Route path="/play/battleship" element={<BattleshipGame />} />
           <Route path="/leaderboard/:id" element={<LeaderboardDetail />} />
           <Route path="/leaderboard/:id/settings" element={<LeaderboardSettings />} />
           <Route path="*" element={<NotFound />} />

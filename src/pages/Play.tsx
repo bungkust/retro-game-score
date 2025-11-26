@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Gamepad2, ArrowLeft, Zap, Brain, Grid3x3 } from 'lucide-react';
+import { Gamepad2, ArrowLeft, Zap, Brain, Grid3x3, Circle, Anchor } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { RetroCard } from '@/components/RetroCard';
 import { RetroButton } from '@/components/RetroButton';
@@ -32,6 +32,22 @@ const Play = () => {
       icon: Grid3x3,
       path: '/play/tictactoe',
       color: 'text-secondary',
+    },
+    {
+      id: 'connectfour',
+      name: 'CONNECT FOUR',
+      description: 'Get 4 in a row to win',
+      icon: Circle,
+      path: '/play/connectfour',
+      color: 'text-accent',
+    },
+    {
+      id: 'battleship',
+      name: 'BATTLESHIP',
+      description: 'Sink all enemy ships',
+      icon: Anchor,
+      path: '/play/battleship',
+      color: 'text-primary',
     },
   ];
 
