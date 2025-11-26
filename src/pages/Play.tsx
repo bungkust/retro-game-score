@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Gamepad2, ArrowLeft, Zap, Brain } from 'lucide-react';
+import { Gamepad2, ArrowLeft, Zap, Brain, Grid3x3 } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { RetroCard } from '@/components/RetroCard';
 import { RetroButton } from '@/components/RetroButton';
@@ -24,6 +24,14 @@ const Play = () => {
       icon: Brain,
       path: '/play/memory',
       color: 'text-primary',
+    },
+    {
+      id: 'tictactoe',
+      name: 'INFINITE TIC TAC TOE',
+      description: 'Infinite Tic-Tac-Toe with FIFO rules',
+      icon: Grid3x3,
+      path: '/play/tictactoe',
+      color: 'text-secondary',
     },
   ];
 
