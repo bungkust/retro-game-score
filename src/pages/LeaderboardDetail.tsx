@@ -92,20 +92,20 @@ const LeaderboardDetail = () => {
             {leaderboard.name}
           </h1>
 
-          {leaderboard.description && (
-            <RetroCard className="mb-6 text-xs text-muted-foreground">
-              {leaderboard.description}
-            </RetroCard>
-          )}
+        {leaderboard.description && (
+          <RetroCard className="mb-6 text-xs text-muted-foreground">
+            {leaderboard.description}
+          </RetroCard>
+        )}
 
-          <div className="flex flex-wrap gap-2 mb-6 text-[10px]">
-            <span className="px-3 py-1 bg-muted text-foreground border border-border">
-              {leaderboard.scoreMode === 'win_count' ? 'WIN COUNT' : 'TOTAL POINTS'}
-            </span>
-            <span className="px-3 py-1 bg-muted text-foreground border border-border">
-              {leaderboard.sortOrder === 'highest' ? '↑ TERTINGGI' : '↓ TERENDAH'}
-            </span>
-          </div>
+        <div className="flex flex-wrap gap-2 mb-6 text-[10px]">
+          <span className="px-3 py-1 bg-muted text-foreground border border-border">
+            {leaderboard.scoreMode === 'win_count' ? 'WIN COUNT' : 'TOTAL POINTS'}
+          </span>
+          <span className="px-3 py-1 bg-muted text-foreground border border-border">
+            {leaderboard.sortOrder === 'highest' ? '↑ TERTINGGI' : '↓ TERENDAH'}
+          </span>
+        </div>
 
         {sortedPlayers.length === 0 ? (
           <RetroCard className="text-center py-12">
@@ -188,7 +188,7 @@ const LeaderboardDetail = () => {
             </div>
           </>
         )}
-        </div>
+      </div>
         {/* End of content wrapper for capture */}
       </div>
       {/* End of max-w-4xl wrapper */}

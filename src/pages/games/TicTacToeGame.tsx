@@ -1,10 +1,11 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RotateCcw, Grid3x3 } from 'lucide-react';
+import { ArrowLeft, RotateCcw, Grid3x3, Save } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { RetroCard } from '@/components/RetroCard';
 import { RetroButton } from '@/components/RetroButton';
 import { NameInputDialog } from '@/components/NameInputDialog';
+import { PlayerNameDialog } from '@/components/PlayerNameDialog';
 import { storage } from '@/lib/storage';
 import { soundPlayer } from '@/lib/sounds';
 import { toast } from 'sonner';
@@ -26,6 +27,11 @@ const TicTacToeGame = () => {
   const [gameOver, setGameOver] = useState(false);
   const [showNameInput, setShowNameInput] = useState(false);
   const [winningPlayer, setWinningPlayer] = useState<Player | null>(null);
+  
+  // Player names state
+  const [playerNames, setPlayerNames] = useState<{ X: string | null; O: string | null }>({ X: null, O: null });
+  const [showPlayerNameDialog, setShowPlayerNameDialog] = useState(false);
+  const [currentNameInput, setCurrentNameInput] = useState<'X' | 'O' | null>(null);
 
   // Refs to track current state for makeMove
   const boardRef = useRef(board);
@@ -45,6 +51,43 @@ const TicTacToeGame = () => {
   const leaderboard = useMemo(() => storage.getOrCreateGameLeaderboard('tictactoe'), []);
   const sortedPlayers = useMemo(() => [...leaderboard.players].sort((a, b) => b.score - a.score), [leaderboard.players]);
   const currentHighScore = sortedPlayers[0]?.score || 0;
+
+  // Calculate total session score (X wins + O wins)
+  const sessionScore = useMemo(() => wins.X + wins.O, [wins]);
+
+  // Check if player names are set, if not show dialog on mount
+  useEffect(() => {
+    // Only check on initial mount
+    if (!playerNames.X && !playerNames.O) {
+      setShowPlayerNameDialog(true);
+      setCurrentNameInput('X');
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Handle player name submit
+  const handlePlayerNameSubmit = useCallback((name: string) => {
+    if (currentNameInput === 'X') {
+      setPlayerNames(prev => ({ ...prev, X: name }));
+      setCurrentNameInput('O');
+      // Continue to O input
+    } else if (currentNameInput === 'O') {
+      setPlayerNames(prev => ({ ...prev, O: name }));
+      setShowPlayerNameDialog(false);
+      setCurrentNameInput(null);
+      soundPlayer.playSuccess();
+      toast.success('GAME SIAP!');
+    }
+  }, [currentNameInput]);
+
+  // Handle player name dialog close (only allow close if both names are set)
+  const handlePlayerNameDialogClose = useCallback(() => {
+    if (playerNames.X && playerNames.O) {
+      setShowPlayerNameDialog(false);
+    } else {
+      // If names not complete, navigate back
+      navigate('/play');
+    }
+  }, [playerNames, navigate]);
 
   // Check win condition (horizontal, vertical, diagonal)
   const checkWin = useCallback((boardState: Board, player: Player): boolean => {
@@ -145,11 +188,7 @@ const TicTacToeGame = () => {
       }));
       soundPlayer.playSuccess();
       toast.success(`PEMAIN ${player} MENANG!`);
-      
-      // Show name input after a short delay
-      setTimeout(() => {
-        setShowNameInput(true);
-      }, 1000);
+      // Note: No longer showing name input after each win - score accumulates per session
     } else {
       // Switch player if no win
       setCurrentPlayer((prev) => (prev === 'X' ? 'O' : 'X'));
@@ -169,28 +208,40 @@ const TicTacToeGame = () => {
     soundPlayer.playSelect();
   }, []);
 
-  // Reset everything including wins
+  // Reset everything including wins (but keep player names)
   const resetAll = useCallback(() => {
     resetGame();
     setWins({ X: 0, O: 0 });
   }, [resetGame]);
 
-  // Handle name input submit
-  const handleNameSubmit = useCallback((name: string) => {
-    if (winningPlayer) {
-      const winCount = wins[winningPlayer];
-      storage.addPlayerToGameLeaderboard('tictactoe', name, winCount);
-      toast.success(`SCORE TERSIMPAN! ${winCount} WIN${winCount > 1 ? 'S' : ''}`);
+  // Handle session score save (save accumulated wins for the session)
+  const handleSaveSession = useCallback(() => {
+    if (sessionScore === 0) {
+      toast.error('BELUM ADA SCORE UNTUK DISIMPAN!');
+      soundPlayer.playError();
+      return;
     }
+    setShowNameInput(true);
+  }, [sessionScore]);
+
+  // Handle name input submit (save total session score)
+  const handleNameSubmit = useCallback((name: string) => {
+    // Save with combined player names format
+    const sessionName = playerNames.X && playerNames.O 
+      ? `${playerNames.X} vs ${playerNames.O}`
+      : name;
+    storage.addPlayerToGameLeaderboard('tictactoe', sessionName, sessionScore);
+    toast.success(`SESSION SCORE TERSIMPAN! ${sessionScore} WIN${sessionScore > 1 ? 'S' : ''}`);
     setShowNameInput(false);
+    // Reset session after saving
+    setWins({ X: 0, O: 0 });
     resetGame();
-  }, [winningPlayer, wins, resetGame]);
+  }, [sessionScore, resetGame, playerNames]);
 
   // Handle name input cancel
   const handleNameCancel = useCallback(() => {
     setShowNameInput(false);
-    resetGame();
-  }, [resetGame]);
+  }, []);
 
   // Continue playing after win (reset board, keep wins)
   const continueGame = useCallback(() => {
@@ -216,29 +267,36 @@ const TicTacToeGame = () => {
           title="INFINITE TIC TAC TOE"
           showBack
           action={
-            <RetroButton
-              variant="ghost"
-              size="sm"
-              onClick={resetAll}
-              className="flex items-center gap-1"
-            >
-              <RotateCcw size={14} />
-            </RetroButton>
+            <div className="flex items-center gap-2">
+              {sessionScore > 0 && (
+                <RetroButton
+                  variant="primary"
+                  size="sm"
+                  onClick={handleSaveSession}
+                  className="flex items-center gap-1"
+                >
+                  <Save size={14} />
+                  <span className="hidden sm:inline">SAVE</span>
+                </RetroButton>
+              )}
+              <RetroButton
+                variant="ghost"
+                size="sm"
+                onClick={resetAll}
+                className="flex items-center gap-1"
+              >
+                <RotateCcw size={14} />
+              </RetroButton>
+            </div>
           }
         />
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-4 mb-6">
           <RetroCard className="text-center p-4">
-            <div className="text-muted-foreground text-[9px] mb-1">CURRENT</div>
-            <div className={`text-lg font-bold ${currentPlayer === 'X' ? 'text-primary' : 'text-secondary'}`}>
-              {currentPlayer}
+            <div className="text-muted-foreground text-[9px] mb-1">
+              {playerNames.X || 'X'}
             </div>
-            <div className="text-muted-foreground text-[9px] mt-1">PLAYER</div>
-          </RetroCard>
-          
-          <RetroCard className="text-center p-4">
-            <div className="text-muted-foreground text-[9px] mb-1">X</div>
             <div className="text-primary text-lg font-bold">
               {wins.X}
             </div>
@@ -246,7 +304,9 @@ const TicTacToeGame = () => {
           </RetroCard>
           
           <RetroCard className="text-center p-4">
-            <div className="text-muted-foreground text-[9px] mb-1">O</div>
+            <div className="text-muted-foreground text-[9px] mb-1">
+              {playerNames.O || 'O'}
+            </div>
             <div className="text-secondary text-lg font-bold">
               {wins.O}
             </div>
@@ -260,7 +320,7 @@ const TicTacToeGame = () => {
             GILIRAN
           </div>
           <div className={`text-xl font-bold ${currentPlayer === 'X' ? 'text-primary glow-cyan' : 'text-secondary glow-magenta'}`}>
-            {currentPlayer}
+            {currentPlayer === 'X' ? (playerNames.X || 'X') : (playerNames.O || 'O')}
           </div>
           {!gameOver && (
             <div className="text-xs text-muted-foreground mt-2">
@@ -282,7 +342,7 @@ const TicTacToeGame = () => {
                 <button
                   key={index}
                   onClick={() => makeMove(index)}
-                  disabled={gameOver || cell !== null}
+                  disabled={gameOver || cell !== null || showPlayerNameDialog || !playerNames.X || !playerNames.O}
                   className={`
                     aspect-square flex items-center justify-center
                     border-2 border-border
@@ -290,7 +350,7 @@ const TicTacToeGame = () => {
                     text-4xl sm:text-5xl font-bold
                     ${cell === 'X' ? 'text-primary' : ''}
                     ${cell === 'O' ? 'text-secondary' : ''}
-                    ${cell === null ? 'bg-muted hover:bg-muted/80 hover:border-primary hover:scale-105 cursor-pointer' : 'bg-card cursor-not-allowed'}
+                    ${cell === null && !showPlayerNameDialog && playerNames.X && playerNames.O ? 'bg-muted hover:bg-muted/80 hover:border-primary hover:scale-105 cursor-pointer' : 'bg-card cursor-not-allowed'}
                     active:scale-95
                   `}
                 >
@@ -314,10 +374,13 @@ const TicTacToeGame = () => {
                 <h2 className={`text-xl uppercase mb-4 ${winner === 'X' ? 'text-primary' : 'text-secondary'}`}>
                   PEMAIN {winner} MENANG!
                 </h2>
-                <p className="text-foreground text-sm mb-4">
-                  TOTAL WINS: {wins[winner]}
+                <p className="text-foreground text-sm mb-2">
+                  GAME WIN: {winner} ({wins[winner]} win{wins[winner] > 1 ? 's' : ''})
                 </p>
-                {wins[winner] > currentHighScore && (
+                <p className="text-foreground text-sm mb-4">
+                  SESSION SCORE: {sessionScore} win{sessionScore > 1 ? 's' : ''}
+                </p>
+                {sessionScore > currentHighScore && (
                   <p className="text-accent text-xs mb-6 blink">NEW HIGH SCORE!</p>
                 )}
                 <div className="flex flex-col gap-3 items-center">
@@ -344,12 +407,6 @@ const TicTacToeGame = () => {
                   <RetroButton variant="primary" onClick={continueGame}>
                     CONTINUE
                   </RetroButton>
-                  <RetroButton variant="ghost" onClick={() => {
-                    soundPlayer.playSelect();
-                    setShowNameInput(true);
-                  }}>
-                    SAVE SCORE
-                  </RetroButton>
                 </div>
               </div>
             </RetroCard>
@@ -361,9 +418,20 @@ const TicTacToeGame = () => {
           open={showNameInput}
           onClose={handleNameCancel}
           onSubmit={handleNameSubmit}
-          title="ENTER NAME"
-          score={winningPlayer ? wins[winningPlayer] : 0}
+          title="SAVE SESSION SCORE"
+          score={sessionScore}
         />
+
+        {/* Player Name Dialog */}
+        {currentNameInput && (
+          <PlayerNameDialog
+            open={showPlayerNameDialog}
+            playerLabel={currentNameInput}
+            onClose={handlePlayerNameDialogClose}
+            onSubmit={handlePlayerNameSubmit}
+            existingNames={currentNameInput === 'O' && playerNames.X ? [playerNames.X] : []}
+          />
+        )}
       </div>
     </div>
   );
